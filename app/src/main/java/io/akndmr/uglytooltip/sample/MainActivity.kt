@@ -3,18 +3,20 @@ package io.akndmr.uglytooltip.sample
 import android.os.Bundle
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
 import io.akndmr.ugly_tooltip.R.*
 import io.akndmr.ugly_tooltip.TooltipBuilder
 import io.akndmr.ugly_tooltip.TooltipContentPosition
 import io.akndmr.ugly_tooltip.TooltipDialog
+import io.akndmr.ugly_tooltip.TooltipDialogListener
 import io.akndmr.ugly_tooltip.TooltipObject
 import io.akndmr.uglytooltip.R
 
 class MainActivity : AppCompatActivity() {
 
-    var tooltipDialog: TooltipDialog? = null
+    private lateinit var tooltipDialog: TooltipDialog
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,8 +41,8 @@ class MainActivity : AppCompatActivity() {
             .backgroundContentColorRes(color.darker_gray)
             .circleIndicatorBackgroundDrawableRes(drawable.selector_circle)
             .prevString(string.previous)
-            .nextString(nextStringText = "Sonraki")
-            .finishString(finishStringText = "Bitir da!")
+            .nextString(nextStringText = "Next")
+            .finishString(finishStringText = "Finish")
             .nextTextColorRes(R.color.green)
             .finishTextColorRes(R.color.blue)
             .useCircleIndicator(true)
@@ -55,6 +57,32 @@ class MainActivity : AppCompatActivity() {
             .setTooltipRadius(dimen.tooltip_radius)
             .showSpotlight(true)
             .build()
+
+        tooltipDialog.setCompleteListener(object : TooltipDialogListener.CompleteListener {
+            override fun onComplete(tooltip: TooltipObject?) {
+                Toast.makeText(this@MainActivity, "Complete", Toast.LENGTH_SHORT).show()
+            }
+        })
+
+        tooltipDialog.setNextListener(object : TooltipDialogListener.NextListener {
+            override fun onNext(index: Int, tooltip: TooltipObject?) {
+                Toast.makeText(
+                    this@MainActivity,
+                    "Next index $index text : ${tooltip?.text}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        })
+
+        tooltipDialog.setPreviousListener(object : TooltipDialogListener.PreviousListener {
+            override fun onPrevious(index: Int, tooltip: TooltipObject?) {
+                Toast.makeText(
+                    this@MainActivity,
+                    "Previous index $index text : ${tooltip?.text}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        })
     }
 
     fun startUglyTooltips() {
