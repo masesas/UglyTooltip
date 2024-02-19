@@ -11,4 +11,8 @@ interface TooltipListener {
     fun onNext()
     fun onPrevious()
     fun onComplete()
+
+    interface SkipListener{
+        fun onSkip();
+    }
 }
