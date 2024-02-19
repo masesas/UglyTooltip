@@ -52,6 +52,7 @@ class TooltipBuilder() : Parcelable {
 
     private var skipStringRes = 0
     private var useSkipWord = false
+    private var skipTextColorRes = 0
 
     private var childFragmentManager: FragmentManager? = null
 
@@ -106,6 +107,11 @@ class TooltipBuilder() : Parcelable {
 
     fun nextTextColorRes(@ColorRes nextTextColorRes: Int): TooltipBuilder {
         this.nextTextColorRes = nextTextColorRes
+        return this
+    }
+
+    fun skipTextColorRes(@ColorRes skipTextColorRes: Int): TooltipBuilder {
+        this.skipTextColorRes = skipTextColorRes
         return this
     }
 
@@ -246,6 +252,10 @@ class TooltipBuilder() : Parcelable {
         return nextTextColorRes
     }
 
+    fun getSkipTextColorRes(): Int {
+        return skipTextColorRes
+    }
+
     fun getFinishTextColorRes(): Int {
         return finishTextColorRes
     }
@@ -377,6 +387,7 @@ class TooltipBuilder() : Parcelable {
         useSkipWord = `in`.readByte().toInt() != 0
         prevTextColorRes = `in`.readInt()
         nextTextColorRes = `in`.readInt()
+        skipTextColorRes = `in`.readInt()
         finishTextColorRes = `in`.readInt()
     }
     

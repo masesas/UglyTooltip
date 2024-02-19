@@ -43,13 +43,15 @@ class MainActivity : AppCompatActivity() {
             .prevString(string.previous)
             .nextString(nextStringText = "Next")
             .finishString(finishStringText = "Finish")
+            .skipString(skipStringText = "Skip")
+            .skipTextColorRes(R.color.teal_200)
             .nextTextColorRes(R.color.green)
             .finishTextColorRes(R.color.blue)
             .useCircleIndicator(true)
             .showBottomContainer(true)
             .clickable(true)
             .useArrow(true)
-            .useSkipWord(false)
+            .useSkipWord(true)
             .setFragmentManager(this.supportFragmentManager)
             .lineColorRes(color.line_color)
             .lineWidthRes(dimen.line_width)
@@ -64,11 +66,21 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        tooltipDialog.setSkipListener(object : TooltipDialogListener.SkipListener{
+            override fun onSkip(index: Int, tooltip: TooltipObject?) {
+                Toast.makeText(
+                    this@MainActivity,
+                    "Skip on index $index",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        })
+
         tooltipDialog.setNextListener(object : TooltipDialogListener.NextListener {
             override fun onNext(index: Int, tooltip: TooltipObject?) {
                 Toast.makeText(
                     this@MainActivity,
-                    "Next index $index text : ${tooltip?.text}",
+                    "Next index $index",
                     Toast.LENGTH_SHORT
                 ).show()
             }

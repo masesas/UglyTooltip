@@ -6,11 +6,15 @@ interface TooltipDialogListener {
         fun onNext(index: Int, tooltip: TooltipObject?)
     }
 
-    interface PreviousListener{
+    interface PreviousListener {
         fun onPrevious(index: Int, tooltip: TooltipObject?)
     }
 
     interface CompleteListener {
         fun onComplete(tooltip: TooltipObject?)
+    }
+
+    interface SkipListener {
+        fun onSkip(index: Int, tooltip: TooltipObject?)
     }
 }

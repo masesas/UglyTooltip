@@ -38,6 +38,7 @@ class TooltipLayout : FrameLayout {
     private var titleTextColor = 0
     private var prevTextColor = 0
     private var nextTextColor = 0
+    private var skipTextColor = 0
     private var finishTextColor = 0
     private var shadowColor = 0
     private var textSize = 0f
@@ -53,7 +54,7 @@ class TooltipLayout : FrameLayout {
     private var prevString: String? = null
     private var nextString: String? = null
     private var finishString: String? = null
-    private var skipString: String? = null
+    private lateinit var skipString: String
     private var shouldShowIcons: Boolean = false
     private var showBottomContainer: Boolean = true
 
@@ -76,6 +77,7 @@ class TooltipLayout : FrameLayout {
 
     // listener
     private var tooltipListener: TooltipListener? = null
+    private var skipListener: TooltipListener.SkipListener? = null
 
     var tooltipContentPosition: TooltipContentPosition? = null
 
@@ -98,11 +100,13 @@ class TooltipLayout : FrameLayout {
     private var textViewDesc: TextView? = null
     private var prevButton: TextView? = null
     private var nextButton: TextView? = null
+    private var skipButton: TextView? = null
     private var prevImageView: AppCompatImageView? = null
     private var nextImageView: AppCompatImageView? = null
     private var lineView: View? = null
     private var viewGroupIndicator: ViewGroup? = null
     private var bottomContainer: ViewGroup? = null
+    private var skipContainer: ViewGroup? = null
 
     constructor(context: Context) : super(context) {
         init(context, null)
@@ -185,6 +189,10 @@ class TooltipLayout : FrameLayout {
         this.tooltipListener = showCaseListener
     }
 
+    fun setSkipListener(skipListener: TooltipListener.SkipListener){
+        this.skipListener = skipListener
+    }
+
     @Throws(Throwable::class)
     fun showTutorial(
         view: View?,
@@ -213,12 +221,7 @@ class TooltipLayout : FrameLayout {
 
         if (prevButton != null) {
             if (isStart) {
-                if (hasSkipWord) {
-                    prevButton!!.text = skipString
-                    prevButton!!.visibility = View.VISIBLE
-                } else {
-                    prevButton!!.visibility = View.INVISIBLE
-                }
+                prevButton!!.visibility = View.INVISIBLE
             } else {
                 if (!shouldShowIcons) {
                     prevButton!!.text = prevString
@@ -230,14 +233,8 @@ class TooltipLayout : FrameLayout {
         if (prevImageView != null) {
             if (shouldShowIcons) {
                 if (isStart) {
-                    if (hasSkipWord) {
-                        prevButton!!.text = skipString
-                        prevButton!!.visibility = View.VISIBLE
-                        prevImageView!!.visibility = View.GONE
-                    } else {
-                        prevButton!!.visibility = View.GONE
-                        prevImageView!!.visibility = View.INVISIBLE
-                    }
+                    prevButton!!.visibility = View.GONE
+                    prevImageView!!.visibility = View.INVISIBLE
                 } else {
                     prevImageView!!.visibility = View.VISIBLE
                 }
@@ -266,6 +263,8 @@ class TooltipLayout : FrameLayout {
                 }
             }
         }
+
+        skipContainer?.visibility = if (isLast) GONE else VISIBLE
 
         makeCircleIndicator(!isStart || !isLast, currentTutorIndex, tutorsListSize)
         if (view == null) {
@@ -418,6 +417,7 @@ class TooltipLayout : FrameLayout {
         titleTextColor = Color.WHITE
         prevTextColor = Color.WHITE
         nextTextColor = Color.WHITE
+        skipTextColor = Color.WHITE
         finishTextColor = Color.WHITE
         textTitleSize = resources.getDimension(dimen.title_size)
         textSize = resources.getDimension(dimen.text_normal)
@@ -496,6 +496,11 @@ class TooltipLayout : FrameLayout {
             context,
             builder.getNextTextColorRes()
         ) else nextTextColor
+
+        skipTextColor = if (builder.getSkipTextColorRes() != 0) ContextCompat.getColor(
+            context,
+            builder.getSkipTextColorRes()
+        ) else skipTextColor
 
         finishTextColor = if (builder.getFinishTextColorRes() != 0) ContextCompat.getColor(
             context,
@@ -624,12 +629,23 @@ class TooltipLayout : FrameLayout {
                 if (builder.getPackageName() != null) builder.getPackageName() else context.packageName
             )
 
+            val skip_container = resources.getIdentifier(
+                "ll_skip",
+                "id",
+                if (builder.getPackageName() != null) builder.getPackageName() else context.packageName
+            )
+
+            val text_skip = resources.getIdentifier(
+                "text_skip",
+                "id",
+                if (builder.getPackageName() != null) builder.getPackageName() else context.packageName
+            )
+
             val viewGroupTutorContent: CardView =
                 viewGroup!!.findViewById(view_group_tutor_content) as CardView
             viewGroupTutorContent.setCardBackgroundColor(backgroundContentColor)
             viewGroupTutorContent.radius = tooltipRadius.toFloat()
             //TooltipViewHelper.setBackgroundColor(viewGroupTutorContent, backgroundContentColor)
-            textViewTitle = viewGroupTutorContent.findViewById(text_title)
             textViewTitle = viewGroupTutorContent.findViewById(text_title)
             textViewTitle!!.setTextColor(titleTextColor)
             textViewTitle!!.setTextSize(TypedValue.COMPLEX_UNIT_PX, textTitleSize)
@@ -638,11 +654,12 @@ class TooltipLayout : FrameLayout {
             textViewDesc!!.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize)
             prevButton = viewGroupTutorContent.findViewById(text_previous)
             nextButton = viewGroupTutorContent.findViewById(text_next)
+            skipButton = viewGroupTutorContent.findViewById(text_skip)
             prevImageView = viewGroupTutorContent.findViewById(ic_previous)
             nextImageView = viewGroupTutorContent.findViewById(ic_next)
             lineView = viewGroupTutorContent.findViewById(view_line)
             bottomContainer = viewGroupTutorContent.findViewById(bottom_container)
-
+            skipContainer = viewGroupTutorContent.findViewById(skip_container)
             viewGroupIndicator = viewGroupTutorContent.findViewById(view_group_indicator)
         }
 
@@ -654,7 +671,7 @@ class TooltipLayout : FrameLayout {
             lineView?.apply {
                 setBackgroundColor(lineColorRes)
                 layoutParams.height = 0
-                visibility = if(lineWidthRes > 0) VISIBLE else GONE
+                visibility = if (lineWidthRes > 0) VISIBLE else GONE
             }
 
             if (prevButton != null) {
@@ -663,9 +680,7 @@ class TooltipLayout : FrameLayout {
                 prevButton!!.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize)
                 prevButton!!.setOnClickListener {
                     if (tooltipListener != null) {
-                        if (this@TooltipLayout.isStart && hasSkipWord) {
-                            this@TooltipLayout.tooltipListener!!.onComplete()
-                        } else {
+                        if (!this@TooltipLayout.isStart) {
                             this@TooltipLayout.tooltipListener!!.onPrevious()
                         }
                     }
@@ -692,9 +707,7 @@ class TooltipLayout : FrameLayout {
                         prevImageView!!.visibility = View.VISIBLE
                         prevImageView!!.setOnClickListener {
                             if (tooltipListener != null) {
-                                if (this@TooltipLayout.isStart && hasSkipWord) {
-                                    this@TooltipLayout.tooltipListener!!.onComplete()
-                                } else {
+                                if (!this@TooltipLayout.isStart) {
                                     this@TooltipLayout.tooltipListener!!.onPrevious()
                                 }
                             }
@@ -711,6 +724,19 @@ class TooltipLayout : FrameLayout {
                         nextImageView!!.setImageResource(nextDrawableRes)
                         nextImageView!!.visibility = View.VISIBLE
                         nextImageView!!.setOnClickListener { onNextClicked() }
+                    }
+                }
+            }
+
+            skipContainer?.visibility = if (hasSkipWord) VISIBLE else GONE
+
+            if (hasSkipWord) {
+                skipButton?.apply {
+                    text = skipString
+                    setTextColor(skipTextColor)
+                    setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize)
+                    setOnClickListener {
+                        this@TooltipLayout.skipListener?.onSkip()
                     }
                 }
             }
@@ -815,6 +841,7 @@ class TooltipLayout : FrameLayout {
                     }
                 }
             }
+
             TooltipContentPosition.LEFT -> {
                 val expectedWidth = highlightXstart - 2 * spacing
                 viewGroup!!.measure(
@@ -877,6 +904,7 @@ class TooltipLayout : FrameLayout {
                     }
                 }
             }
+
             TooltipContentPosition.BOTTOM -> {
                 layoutParams = LayoutParams(
                     LayoutParams.MATCH_PARENT,
@@ -958,6 +986,7 @@ class TooltipLayout : FrameLayout {
                     }
                 }
             }
+
             TooltipContentPosition.TOP -> {
                 layoutParams = LayoutParams(
                     LayoutParams.MATCH_PARENT,
@@ -1039,6 +1068,7 @@ class TooltipLayout : FrameLayout {
                     }
                 }
             }
+
             TooltipContentPosition.UNDEFINED -> moveViewToCenter()
         }
     }

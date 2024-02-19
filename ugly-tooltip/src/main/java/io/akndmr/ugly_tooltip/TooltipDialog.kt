@@ -44,6 +44,12 @@ class TooltipDialog : DialogFragment() {
     private var nextListener: TooltipDialogListener.NextListener? = null
     private var previousListener: TooltipDialogListener.PreviousListener? = null
     private var completeListener: TooltipDialogListener.CompleteListener? = null
+    private var skipListener: TooltipDialogListener.SkipListener? = null
+
+    private var nextListenerShouldUseInstanceFunc = true
+    private var prevListenerShouldUseInstanceFunc = true
+    private var completeListenerShouldUseInstanceFunc = true
+    private var skipListenerShouldUseInstanceFunc = true
 
     companion object {
         private val ARG_BUILDER = "BUILDER"
@@ -96,27 +102,55 @@ class TooltipDialog : DialogFragment() {
         view.setTooltipListener(object : TooltipListener {
             override
             fun onPrevious() {
+                if (previousListener != null && !prevListenerShouldUseInstanceFunc) {
+                    return previousListener!!.onPrevious(currentTutorIndex, tutorsList!![currentTutorIndex])
+                }
+
                 previous()
             }
 
             override
             fun onNext() {
+                if (nextListener != null && !nextListenerShouldUseInstanceFunc) {
+                    return nextListener!!.onNext(currentTutorIndex, tutorsList!![currentTutorIndex])
+                }
+
                 next()
             }
 
             override
             fun onComplete() {
-                if (!TextUtils.isEmpty(dialogTag)) {
-                    TooltipPreference.setShown(requireContext(), dialogTag, true)
+                if (completeListener != null && tutorsList != null) {
+                    if (completeListenerShouldUseInstanceFunc) {
+                        completeListener!!.onComplete(tutorsList!![currentTutorIndex])
+                    } else {
+                        return completeListener!!.onComplete(tutorsList!![currentTutorIndex])
+                    }
                 }
 
-                if (tutorsList != null) {
-                    completeListener?.onComplete(tutorsList!![currentTutorIndex])
+                if (!TextUtils.isEmpty(dialogTag)) {
+                    TooltipPreference.setShown(requireContext(), dialogTag, true)
                 }
 
                 this@TooltipDialog.close()
             }
         })
+
+        view.setSkipListener(object : TooltipListener.SkipListener {
+            override fun onSkip() {
+                if (skipListener != null && tutorsList != null) {
+                    if (skipListenerShouldUseInstanceFunc) {
+                        skipListener!!.onSkip(currentTutorIndex, tutorsList!![currentTutorIndex])
+                    } else {
+                        return skipListener!!.onSkip(currentTutorIndex, tutorsList!![currentTutorIndex])
+                    }
+
+                }
+
+                this@TooltipDialog.close()
+            }
+        })
+
         if (builder != null) {
             isCancelable = builder!!.isClickable()
         }
@@ -369,22 +403,42 @@ class TooltipDialog : DialogFragment() {
     fun close() {
         try {
             dismiss()
-            val layout: TooltipLayout = this@TooltipDialog.view as TooltipLayout ?: return
+            val layout: TooltipLayout = this@TooltipDialog.view as TooltipLayout
             layout.closeTutorial()
         } catch (e: Exception) {
             Log.e(LOG_TAG, e.stackTraceToString())
         }
     }
 
-    fun setNextListener(nextListener: TooltipDialogListener.NextListener) {
+    fun setNextListener(
+        nextListener: TooltipDialogListener.NextListener,
+        nextListenerShouldUseInstanceFunc: Boolean = true
+    ) {
         this.nextListener = nextListener
+        this.nextListenerShouldUseInstanceFunc = nextListenerShouldUseInstanceFunc
     }
 
-    fun setPreviousListener(previousListener: TooltipDialogListener.PreviousListener) {
+    fun setPreviousListener(
+        previousListener: TooltipDialogListener.PreviousListener,
+        prevListenerShouldUseInstanceFunc: Boolean = true
+    ) {
         this.previousListener = previousListener
+        this.prevListenerShouldUseInstanceFunc = prevListenerShouldUseInstanceFunc
     }
 
-    fun setCompleteListener(completeListener: TooltipDialogListener.CompleteListener) {
+    fun setCompleteListener(
+        completeListener: TooltipDialogListener.CompleteListener,
+        completeListenerShouldUseInstanceFunc: Boolean = true
+    ) {
         this.completeListener = completeListener
+        this.completeListenerShouldUseInstanceFunc = completeListenerShouldUseInstanceFunc
+    }
+
+    fun setSkipListener(
+        skipListener: TooltipDialogListener.SkipListener,
+        skipShouldUseInstanceFunc: Boolean = true
+    ) {
+        this.skipListener = skipListener
+        this.skipListenerShouldUseInstanceFunc = skipShouldUseInstanceFunc
     }
 }
