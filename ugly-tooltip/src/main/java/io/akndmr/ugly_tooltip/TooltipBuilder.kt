@@ -350,7 +350,7 @@ class TooltipBuilder() : Parcelable {
         return clickable
     }
 
-    fun build(): TooltipDialog? {
+    fun build(): TooltipDialog {
         return TooltipDialog.newInstance(this)
     }
 

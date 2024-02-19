@@ -3,9 +3,8 @@ package io.akndmr.ugly_tooltip
 import android.R
 import android.app.Activity
 import android.app.Dialog
+import android.content.Context
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.text.TextUtils
 import android.util.Log
 import android.view.LayoutInflater
@@ -42,10 +41,14 @@ class TooltipDialog : DialogFragment() {
 
     private var retryCounter = 0
 
+    private var nextListener: TooltipDialogListener.NextListener? = null
+    private var previousListener: TooltipDialogListener.PreviousListener? = null
+    private var completeListener: TooltipDialogListener.CompleteListener? = null
+
     companion object {
         private val ARG_BUILDER = "BUILDER"
 
-        fun newInstance(builder: TooltipBuilder?): TooltipDialog? {
+        fun newInstance(builder: TooltipBuilder): TooltipDialog {
             val args = Bundle()
             val fragment = TooltipDialog()
             args.putParcelable(ARG_BUILDER, builder)
@@ -106,6 +109,11 @@ class TooltipDialog : DialogFragment() {
                 if (!TextUtils.isEmpty(dialogTag)) {
                     TooltipPreference.setShown(requireContext(), dialogTag, true)
                 }
+
+                if (tutorsList != null) {
+                    completeListener?.onComplete(tutorsList!![currentTutorIndex])
+                }
+
                 this@TooltipDialog.close()
             }
         })
@@ -115,7 +123,7 @@ class TooltipDialog : DialogFragment() {
     }
 
     operator fun next() {
-        if (currentTutorIndex + 1 >= tutorsList!!.size) {
+        if (currentTutorIndex + 1 >= (tutorsList?.size ?: 0)) {
             close()
         } else {
             if (tutorsList != null) {
@@ -126,6 +134,8 @@ class TooltipDialog : DialogFragment() {
                     tutorsList!!,
                     currentTutorIndex + 1
                 )
+
+                nextListener?.onNext(currentTutorIndex, tutorsList!![currentTutorIndex])
             }
         }
     }
@@ -142,6 +152,8 @@ class TooltipDialog : DialogFragment() {
                     tutorsList!!,
                     currentTutorIndex - 1
                 )
+
+                previousListener?.onPrevious(currentTutorIndex, tutorsList!![currentTutorIndex])
             }
         }
     }
@@ -159,8 +171,8 @@ class TooltipDialog : DialogFragment() {
         }
     }
 
-    fun hasShown(activity: Activity, tag: String): Boolean {
-        return TooltipPreference.hasShown(requireActivity(), tag)
+    fun hasShown(context: Context, tag: String): Boolean {
+        return TooltipPreference.hasShown(context, tag)
     }
 
 
@@ -343,22 +355,7 @@ class TooltipDialog : DialogFragment() {
         radius: Int
     ) {
         try {
-            val layout: TooltipLayout? = this@TooltipDialog.view as TooltipLayout
-            if (layout == null) {
-                if (retryCounter >= MAX_RETRY_LAYOUT) {
-                    retryCounter = 0
-                    return
-                }
-                // wait until the layout is ready, and call itself
-                Handler(Looper.getMainLooper()).postDelayed(Runnable {
-                    retryCounter++
-                    layoutShowTutorial(
-                        view, title, text,
-                        showCaseContentPosition, tintBackgroundColor, customTarget, radius
-                    )
-                }, 1000)
-                return
-            }
+            val layout: TooltipLayout = this@TooltipDialog.view as TooltipLayout
             retryCounter = 0
             layout.showTutorial(
                 view, title, text, currentTutorIndex, tutorsList!!.size,
@@ -379,4 +376,15 @@ class TooltipDialog : DialogFragment() {
         }
     }
 
+    fun setNextListener(nextListener: TooltipDialogListener.NextListener) {
+        this.nextListener = nextListener
+    }
+
+    fun setPreviousListener(previousListener: TooltipDialogListener.PreviousListener) {
+        this.previousListener = previousListener
+    }
+
+    fun setCompleteListener(completeListener: TooltipDialogListener.CompleteListener) {
+        this.completeListener = completeListener
+    }
 }
