@@ -8,7 +8,9 @@
         android:roundIcon="@mipmap/ugly_launcher_icon"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".sample.MainActivity">
+        <activity
+            android:name=".sample.MainActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
